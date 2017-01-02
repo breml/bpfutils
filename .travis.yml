@@ -1,0 +1,24 @@
+language: go
+go:
+- tip
+before_install:
+- sudo apt-get -qq update
+- sudo apt-get install -y libpcap0.8 libpcap0.8-dev
+install:
+- go get golang.org/x/tools/cmd/cover
+- go get github.com/mattn/goveralls
+- go get golang.org/x/net/bpf
+- go get github.com/google/gopacket
+script:
+- go test -v -covermode=count -coverprofile=coverage.out
+- $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out
+  -service=travis-ci -repotoken $COVERALLS_TOKEN
+env:
+  matrix:
+    secure: xhqwxVvEAvdO3TZOTWYhQ9ddDAiBEtG2WlKifgTGugzpsnUkKVI0XBuOsm+XMd3yOSrz52wNFtyi16zN4LEgYfzalr0gquvyHKeVuND0asaIayTs1aF6vsJNyDbYeYZCU8OCLMZTnnJ8Oweh3q35B1tyzkuVz3DW+FJjTjwu62XErtkWlyDLS6aBN2NrXBkRH7GRlmENbEpV0i94APgfVEbklVSC8e+njPaXh3v4Eg3k3xRpRIMIG14KvroO5FD7ciRnWkaf4CFM7tqTVPFKbBvVAk2YZorobXFknNR1ClI+YQj89rxY3GKgfn5aGRtH/rnxxbL4rsHj0A7BK4IWI8SgLwRquYkyWCHvk3atyYcJbU0KQnL3DxVlWJyosknAmkLFmApdUQyLYcWx4o+NX0TNJvyQ3BdY4yjPPFFeJ6qBcvMSrjmnaz93YpnX441An0YTg2PQ1shGcfEoOZAEF8G4iXtzH0nw1aAuyvuw2b/+Km64x6r6U0K+YCzvsXQl961GNQR7S7HneExB2J4rHRxFBCarUxJJ9DdyKGoGy4fZmXQvsanbaPIBE8vNnN/nnVPVGs5cKr3sL5wrLDoJS8RYe8KcVYUarajyvKNs1WdtPjUiz/SymtdNF3jA6YanRiatxAVb24FlcQ1CFIb8YMtX/1B60bT8quxbw1VFblc=
+notifications:
+  email:
+    recipients:
+    - secure: DLwBYD3SeDTGqRXcFGOWfkf0Ttw4gK8nwqp1FALNSHkljq4tlJ4jNarEcXBcbHAeXqD9S7yRKlxITgHDezMLC+bFCMqKGDjKxE/ngoFQw+vzRpwsLK8+Yb2kDU9U5tTOJhcIPTcIWYXR3ouw/vLFwJF4n62gM3/D4OPFBtly93A652cU7jBrpAKcxXBSbBXwMm25O0wYJzX3DzSwB6I7CX3xOPVdHKezOUSxDtfPPgbkLo9hppyr6QVmngjnBl6cacW1Hx2VAhG//Aj7GxA6hydvwZN2ySiNkeMunMrodGiDkbdbzw16AwmXZcT7Jm7jD4/+oAX8SGP1FgJZji7k+K7U5KRknDCMwqxf6ZjVzdQTzj31/SLLa8O83DbFedUQ2Nj2U1jcqAFIE4m8Qlt2E6eOIwpreYd5DlxT88S471JX5hVfKz4/XWD3kSwmKhUYxFm08RQFF8hH58foLYZIRr04a7afd6ytQLK0q2WjSC0iC/7IvA6mnXY0CnuLTW+9NL86C10MGUlysE+g19B3shbfVDo97jK5JoGTCtbJrhtDp7okep8XPTWy0kfDwgAq1Fb7VJiKkt43ZOTcafzbc9iGigHn6kYgSv9mgfyZFDTuTnTP+iQpNiuHz3Qpq6nff+a4uM8J+qvpCq8Kqd9/34UzzzqqggZ7R5Za1rNw10c=
+    on_success: never
+    on_failure: always
