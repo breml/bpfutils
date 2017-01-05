@@ -49,7 +49,7 @@ func (c ChainType) String() string {
 //   if a packet would be returned after the first block (register a > 0)
 // * OR-case: only evaluate second block,
 //   if the packet would not be returned after the first block (register a == 0)
-func ChainFilter(a, b []bpf.Instruction, ct ChainType) ([]bpf.Instruction, error) {
+func ChainFilter(a, b []bpf.Instruction, ct ChainType) ([]bpf.Instruction) {
 	bpfChained := make([]bpf.Instruction, 0, len(a)+len(b)+10)
 	offset := len(a)
 
@@ -89,7 +89,7 @@ func ChainFilter(a, b []bpf.Instruction, ct ChainType) ([]bpf.Instruction, error
 	// Add BPF block B
 	bpfChained = append(bpfChained, b...)
 
-	return bpfChained, nil
+	return bpfChained
 }
 
 // ChainPcapFilter combines two []pcap.BPFInstruction BPF filter.
@@ -103,11 +103,7 @@ func ChainPcapFilter(a, b []pcap.BPFInstruction, ct ChainType) ([]pcap.BPFInstru
 	if !ok {
 		return nil, fmt.Errorf("Unable to convert '%#v'", b)
 	}
-	chainedBpf, err := ChainFilter(a0, b0, ct)
-	if err != nil {
-		return nil, err
-	}
-	rawBpf, err := bpf.Assemble(chainedBpf)
+	rawBpf, err := bpf.Assemble(ChainFilter(a0, b0, ct))
 	if err != nil {
 		return nil, err
 	}

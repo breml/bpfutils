@@ -10,6 +10,36 @@ import (
 	"golang.org/x/net/bpf"
 )
 
+func TestChainTypeString(t *testing.T) {
+	cases := []struct {
+		input ChainType
+		output string
+	}{
+		{
+			input: 0,
+			output: "undefined",
+		},
+		{
+			input: 1,
+			output: "and",
+		},
+		{
+			input: 2,
+			output: "or",
+		},
+		{
+			input: 3,
+			output: "undefined",
+		},
+	}
+
+	for _, test := range cases {
+		if test.input.String() != test.output {
+			t.Errorf("got: %s, expected: %s", test.input.String(), test.output)
+		}
+	}
+}
+
 func TestChainFilter(t *testing.T) {
 	cases := []struct {
 		description string
@@ -133,10 +163,7 @@ func TestChainFilter(t *testing.T) {
 	defer handle.Close()
 
 	for _, test := range cases {
-		gotAnd, err := ChainFilter(test.inputA, test.inputB, AND)
-		if err != nil {
-			t.Fatal(test.inputA, test.inputB, err)
-		}
+		gotAnd := ChainFilter(test.inputA, test.inputB, AND)
 
 		if !reflect.DeepEqual(gotAnd, test.expectAnd) {
 			t.Errorf("case '%s'\nprogram not correctly combined with AND\n\ngot:\n%s\n\n, expected:\n%s\n", test.description, AsmString(gotAnd), AsmString(test.expectAnd))
@@ -152,10 +179,7 @@ func TestChainFilter(t *testing.T) {
 		}
 		gopacket.NewPacketSource(handle, handle.LinkType())
 
-		gotOr, err := ChainFilter(test.inputA, test.inputB, OR)
-		if err != nil {
-			t.Fatal(test.inputA, test.inputB, err)
-		}
+		gotOr := ChainFilter(test.inputA, test.inputB, OR)
 
 		if !reflect.DeepEqual(gotOr, test.expectOr) {
 			t.Errorf("case '%s'\nprogram not correctly combined with OR\n\ngot:\n%s\n\n, expected:\n%s\n", test.description, AsmString(gotOr), AsmString(test.expectOr))
@@ -169,5 +193,37 @@ func TestChainFilter(t *testing.T) {
 		if err != nil {
 			t.Errorf("case '%s': failed to set BPF instructions with error: %s\n%s", test.description, err.Error(), AsmString(gotOr))
 		}
+
+		// Same for ChainPcapFilter
+		inputApcap, err := bpf.Assemble(test.inputA)
+		if err != nil {
+			t.Errorf("case '%s': failed to assemble input.A with error: %s\n%#v", test.description, err.Error(), test.inputA)
+		}
+
+		inputBpcap, err := bpf.Assemble(test.inputB)
+		if err != nil {
+			t.Errorf("case '%s': failed to assemble input.B with error: %s\n%#v", test.description, err.Error(), test.inputB)
+		}
+
+		gotAndPcap, err := ChainPcapFilter(ToPcapBPFInstructions(inputApcap), ToPcapBPFInstructions(inputBpcap), AND)
+		if err != nil {
+			t.Fatal(test.inputA, test.inputB, err)
+		}
+
+		err = handle.SetBPFInstructionFilter(gotAndPcap)
+		if err != nil {
+			t.Errorf("case '%s': failed to set BPF instructions with error: %s\n%#v", test.description, err.Error(), gotAndPcap)
+		}
+
+		gotOrPcap, err := ChainPcapFilter(ToPcapBPFInstructions(inputApcap), ToPcapBPFInstructions(inputBpcap), OR)
+		if err != nil {
+			t.Fatal(test.inputA, test.inputB, err)
+		}
+
+		err = handle.SetBPFInstructionFilter(gotOrPcap)
+		if err != nil {
+			t.Errorf("case '%s': failed to set BPF instructions with error: %s\n%#v", test.description, err.Error(), gotOrPcap)
+		}
+
 	}
 }
