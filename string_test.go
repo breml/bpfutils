@@ -5,9 +5,18 @@ import (
 	"testing"
 
 	"golang.org/x/net/bpf"
+	"fmt"
+	"github.com/google/gopacket/pcap"
 )
 
+type InvalidInstruction struct{}
+func (a InvalidInstruction) Assemble()(bpf.RawInstruction, error) {
+	return bpf.RawInstruction{}, fmt.Errorf("Invalid Instruction")
+}
+
 func TestAsmString(t *testing.T) {
+
+
 	cases := []struct {
 		input  bpf.Instruction
 		expect string
@@ -21,12 +30,20 @@ func TestAsmString(t *testing.T) {
 			expect: "ldx #42",
 		},
 		{
+			input:  bpf.LoadConstant{Dst: 0xffff, Val: 42},
+			expect: "!! unknown instruction: bpf.LoadConstant{Dst:0xffff, Val:0x2a}",
+		},
+		{
 			input:  bpf.LoadScratch{Dst: bpf.RegA, N: 3},
 			expect: "ld M[3]",
 		},
 		{
 			input:  bpf.LoadScratch{Dst: bpf.RegX, N: 3},
 			expect: "ldx M[3]",
+		},
+		{
+			input:  bpf.LoadScratch{Dst: 0xffff, N: 3},
+			expect: "!! unknown instruction: bpf.LoadScratch{Dst:0xffff, N:3}",
 		},
 		{
 			input:  bpf.LoadAbsolute{Off: 42, Size: 1},
@@ -41,6 +58,10 @@ func TestAsmString(t *testing.T) {
 			expect: "ld [42]",
 		},
 		{
+			input:  bpf.LoadAbsolute{Off: 42, Size: 0xffffffff},
+			expect: "!! unknown instruction: bpf.LoadAbsolute{Off:0x2a, Size:4294967295}",
+		},
+		{
 			input:  bpf.LoadIndirect{Off: 42, Size: 1},
 			expect: "ldb [x + 42]",
 		},
@@ -51,6 +72,10 @@ func TestAsmString(t *testing.T) {
 		{
 			input:  bpf.LoadIndirect{Off: 42, Size: 4},
 			expect: "ld [x + 42]",
+		},
+		{
+			input:  bpf.LoadIndirect{Off: 42, Size: 0xffffffff},
+			expect: "!! unknown instruction: bpf.LoadIndirect{Off:0x2a, Size:4294967295}",
 		},
 		{
 			input:  bpf.LoadMemShift{Off: 42},
@@ -72,6 +97,15 @@ func TestAsmString(t *testing.T) {
 			input:  bpf.LoadExtension{Num: bpf.ExtRand},
 			expect: "ld #rand",
 		},
+		// Workaround due to bug: https://github.com/golang/go/issues/18469
+		{
+			input:  bpf.LoadAbsolute{Off:0xfffff038, Size:4},
+			expect: "ld #rand",
+		},
+		{
+			input:  bpf.LoadExtension{Num: 0xfff},
+			expect: "!! unknown instruction: bpf.LoadExtension{Num:4095}",
+		},
 		{
 			input:  bpf.StoreScratch{Src: bpf.RegA, N: 3},
 			expect: "st M[3]",
@@ -79,6 +113,10 @@ func TestAsmString(t *testing.T) {
 		{
 			input:  bpf.StoreScratch{Src: bpf.RegX, N: 3},
 			expect: "stx M[3]",
+		},
+		{
+			input:  bpf.StoreScratch{Src: 0xffff, N: 3},
+			expect: "!! unknown instruction: bpf.StoreScratch{Src:0xffff, N:3}",
 		},
 		{
 			input:  bpf.ALUOpConstant{Op: bpf.ALUOpAdd, Val: 42},
@@ -101,6 +139,10 @@ func TestAsmString(t *testing.T) {
 			expect: "or #42",
 		},
 		{
+			input:  bpf.ALUOpConstant{Op: bpf.ALUOpAnd, Val: 42},
+			expect: "and #42",
+		},
+		{
 			input:  bpf.ALUOpConstant{Op: bpf.ALUOpShiftLeft, Val: 42},
 			expect: "lsh #42",
 		},
@@ -115,6 +157,10 @@ func TestAsmString(t *testing.T) {
 		{
 			input:  bpf.ALUOpConstant{Op: bpf.ALUOpXor, Val: 42},
 			expect: "xor #42",
+		},
+		{
+			input:  bpf.ALUOpConstant{Op: 0xffff, Val: 42},
+			expect: "!! unknown instruction: bpf.ALUOpConstant{Op:0xffff, Val:0x2a}",
 		},
 		{
 			input:  bpf.ALUOpX{Op: bpf.ALUOpAdd},
@@ -137,6 +183,10 @@ func TestAsmString(t *testing.T) {
 			expect: "or x",
 		},
 		{
+			input:  bpf.ALUOpX{Op: bpf.ALUOpAnd},
+			expect: "and x",
+		},
+		{
 			input:  bpf.ALUOpX{Op: bpf.ALUOpShiftLeft},
 			expect: "lsh x",
 		},
@@ -153,6 +203,10 @@ func TestAsmString(t *testing.T) {
 			expect: "xor x",
 		},
 		{
+			input:  bpf.ALUOpX{Op: 0xffff},
+			expect: "!! unknown instruction: bpf.ALUOpX{Op:0xffff}",
+		},
+		{
 			input:  bpf.NegateA{},
 			expect: "neg",
 		},
@@ -163,6 +217,15 @@ func TestAsmString(t *testing.T) {
 		{
 			input:  bpf.JumpIf{Cond: bpf.JumpEqual, Val: 42, SkipTrue: 8, SkipFalse: 9},
 			expect: "jeq #42,8,9",
+		},
+		{
+			input:  bpf.JumpIf{Cond: bpf.JumpEqual, Val: 42, SkipTrue: 8},
+			expect: "jeq #42,8",
+		},
+		// Workaround due to bug: https://github.com/golang/go/issues/18470
+		{
+			input:  bpf.JumpIf{Cond: bpf.JumpEqual, Val: 42, SkipFalse: 8},
+			expect: "jneq #42,8",
 		},
 		{
 			input:  bpf.JumpIf{Cond: bpf.JumpNotEqual, Val: 42, SkipTrue: 8},
@@ -181,12 +244,28 @@ func TestAsmString(t *testing.T) {
 			expect: "jgt #42,4,5",
 		},
 		{
+			input:  bpf.JumpIf{Cond: bpf.JumpGreaterThan, Val: 42, SkipTrue: 4},
+			expect: "jgt #42,4",
+		},
+		{
 			input:  bpf.JumpIf{Cond: bpf.JumpGreaterOrEqual, Val: 42, SkipTrue: 3, SkipFalse: 4},
 			expect: "jge #42,3,4",
 		},
 		{
+			input:  bpf.JumpIf{Cond: bpf.JumpGreaterOrEqual, Val: 42, SkipTrue: 3},
+			expect: "jge #42,3",
+		},
+		{
 			input:  bpf.JumpIf{Cond: bpf.JumpBitsSet, Val: 42, SkipTrue: 2, SkipFalse: 3},
 			expect: "jset #42,2,3",
+		},
+		{
+			input:  bpf.JumpIf{Cond: bpf.JumpBitsSet, Val: 42, SkipTrue: 2},
+			expect: "jset #42,2",
+		},
+		{
+			input:  bpf.JumpIf{Cond: 0xffff, Val: 42, SkipTrue: 1, SkipFalse: 2},
+			expect: "!! unknown instruction: bpf.JumpIf{Cond:0xffff, Val:0x2a, SkipTrue:0x1, SkipFalse:0x2}",
 		},
 		{
 			input:  bpf.TAX{},
@@ -204,6 +283,11 @@ func TestAsmString(t *testing.T) {
 			input:  bpf.RetConstant{Val: 42},
 			expect: "ret #42",
 		},
+		// Invalid instruction
+		{
+			input: InvalidInstruction{},
+			expect: "!! unknown instruction: bpfutils.InvalidInstruction{}",
+		},
 	}
 
 	for _, test := range cases {
@@ -212,4 +296,33 @@ func TestAsmString(t *testing.T) {
 			t.Errorf("AsmString failed, got: %s, expected: %s", got, test.expect)
 		}
 	}
+}
+
+func TestString(t *testing.T) {
+	cases := []struct{
+		input []pcap.BPFInstruction
+		output string
+	}{
+		{
+			input: []pcap.BPFInstruction{
+				{Code: 0x20, Jt: 0, Jf: 0, K: 0xfffff038},
+				{Code: 0x25, Jt: 1, Jf: 0, K: 4294967},
+				{Code: 0x06, Jt: 0, Jf: 0, K: 0x00000400},
+				{Code: 0x06, Jt: 0, Jf: 0, K: 0000000000},
+			},
+			// Workaround due to bug: https://github.com/golang/go/issues/18469
+			output: `bpf.LoadAbsolute{Off:0xfffff038, Size:4}
+bpf.JumpIf{Cond:0x2, Val:0x418937, SkipTrue:0x1, SkipFalse:0x0}
+bpf.RetConstant{Val:0x400}
+bpf.RetConstant{Val:0x0}
+`,
+		},
+	}
+
+	for _, test := range cases {
+		if String(test.input) != test.output {
+			t.Errorf("Failed to generate right String output, got: %s, expected: %s", String(test.input), test.output)
+		}
+	}
+
 }

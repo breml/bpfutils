@@ -15,7 +15,8 @@ func String(a []pcap.BPFInstruction) string {
 	for _, bpfInst := range ToBpfRawInstructions(a) {
 		_, err := buffer.WriteString(fmt.Sprintf("%#v\n", bpfInst.Disassemble()))
 		if err != nil {
-			// TODO: Should we change the function sig and return this err?
+			// Write to bytes.Buffer should actually never fail
+			// TODO: If we want to implement the Stringer interface, we can not change the function sig and return this err
 			return ""
 		}
 	}
@@ -29,6 +30,7 @@ func AsmString(a []bpf.Instruction) string {
 	for _, bpfInst := range a {
 		_, err := buffer.WriteString(asmString(bpfInst))
 		if err != nil {
+			// Write to bytes.Buffer should actually never fail
 			// TODO: Should we change the function sig and return this err?
 			return ""
 		}
