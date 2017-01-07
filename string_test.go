@@ -97,7 +97,6 @@ func TestAsmString(t *testing.T) {
 			input:  bpf.LoadExtension{Num: bpf.ExtRand},
 			expect: "ld #rand",
 		},
-		// Workaround due to bug: https://github.com/golang/go/issues/18469
 		{
 			input:  bpf.LoadAbsolute{Off:0xfffff038, Size:4},
 			expect: "ld #rand",
@@ -222,7 +221,6 @@ func TestAsmString(t *testing.T) {
 			input:  bpf.JumpIf{Cond: bpf.JumpEqual, Val: 42, SkipTrue: 8},
 			expect: "jeq #42,8",
 		},
-		// Workaround due to bug: https://github.com/golang/go/issues/18470
 		{
 			input:  bpf.JumpIf{Cond: bpf.JumpEqual, Val: 42, SkipFalse: 8},
 			expect: "jneq #42,8",
@@ -310,8 +308,7 @@ func TestString(t *testing.T) {
 				{Code: 0x06, Jt: 0, Jf: 0, K: 0x00000400},
 				{Code: 0x06, Jt: 0, Jf: 0, K: 0000000000},
 			},
-			// Workaround due to bug: https://github.com/golang/go/issues/18469
-			output: `bpf.LoadAbsolute{Off:0xfffff038, Size:4}
+			output: `bpf.LoadExtension{Num:56}
 bpf.JumpIf{Cond:0x2, Val:0x418937, SkipTrue:0x1, SkipFalse:0x0}
 bpf.RetConstant{Val:0x400}
 bpf.RetConstant{Val:0x0}

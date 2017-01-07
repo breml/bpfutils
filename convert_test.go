@@ -41,11 +41,7 @@ func TestToPcapBPFInstruction(t *testing.T) {
 				{Code: 0x06, Jt: 0, Jf: 0, K: 0000000000},
 			},
 			bpf: []bpf.Instruction{
-				// Workaround due to bug: https://github.com/golang/go/issues/18469
-				bpf.LoadAbsolute{Off:0xfffff038, Size:4},
-				//bpf.LoadExtension{Num: bpf.ExtRand},
-
-
+				bpf.LoadExtension{Num: bpf.ExtRand},
 				bpf.JumpIf{Cond: bpf.JumpGreaterThan, Val: 4294967, SkipTrue: 1},
 				bpf.RetConstant{Val: 1024},
 				bpf.RetConstant{Val:0},
