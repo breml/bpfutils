@@ -4,19 +4,19 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/net/bpf"
 	"fmt"
+
 	"github.com/google/gopacket/pcap"
+	"golang.org/x/net/bpf"
 )
 
 type InvalidInstruction struct{}
-func (a InvalidInstruction) Assemble()(bpf.RawInstruction, error) {
+
+func (a InvalidInstruction) Assemble() (bpf.RawInstruction, error) {
 	return bpf.RawInstruction{}, fmt.Errorf("Invalid Instruction")
 }
 
 func TestAsmString(t *testing.T) {
-
-
 	cases := []struct {
 		input  bpf.Instruction
 		expect string
@@ -98,7 +98,7 @@ func TestAsmString(t *testing.T) {
 			expect: "ld #rand",
 		},
 		{
-			input:  bpf.LoadAbsolute{Off:0xfffff038, Size:4},
+			input:  bpf.LoadAbsolute{Off: 0xfffff038, Size: 4},
 			expect: "ld #rand",
 		},
 		{
@@ -283,7 +283,7 @@ func TestAsmString(t *testing.T) {
 		},
 		// Invalid instruction
 		{
-			input: InvalidInstruction{},
+			input:  InvalidInstruction{},
 			expect: "!! unknown instruction: bpfutils.InvalidInstruction{}",
 		},
 	}
@@ -297,8 +297,8 @@ func TestAsmString(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	cases := []struct{
-		input []pcap.BPFInstruction
+	cases := []struct {
+		input  []pcap.BPFInstruction
 		output string
 	}{
 		{

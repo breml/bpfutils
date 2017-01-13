@@ -13,20 +13,20 @@ func TestToPcapBPFInstruction(t *testing.T) {
 	cases := []struct {
 		raw  []bpf.RawInstruction
 		pcap []pcap.BPFInstruction
-		bpf []bpf.Instruction
+		bpf  []bpf.Instruction
 	}{
 		{
 			/*
-		        # get a random uint32 number
-		        ld rand
-		        # if rand is greater than 4294967 (maxuint32 / 1000), drop the package
-		        jgt #4294967, drop
-		        capture:
-		        # ret > 0 -> capture number of byte of the packets
-		        ret #1024
-		        drop:
-		        # ret = 0 -> do not capture the packet
-		        ret #0
+			   # get a random uint32 number
+			   ld rand
+			   # if rand is greater than 4294967 (maxuint32 / 1000), drop the package
+			   jgt #4294967, drop
+			   capture:
+			   # ret > 0 -> capture number of byte of the packets
+			   ret #1024
+			   drop:
+			   # ret = 0 -> do not capture the packet
+			   ret #0
 			*/
 			raw: []bpf.RawInstruction{
 				{Op: 0x20, Jt: 0, Jf: 0, K: 0xfffff038},
@@ -44,7 +44,7 @@ func TestToPcapBPFInstruction(t *testing.T) {
 				bpf.LoadExtension{Num: bpf.ExtRand},
 				bpf.JumpIf{Cond: bpf.JumpGreaterThan, Val: 4294967, SkipTrue: 1},
 				bpf.RetConstant{Val: 1024},
-				bpf.RetConstant{Val:0},
+				bpf.RetConstant{Val: 0},
 			},
 		},
 	}
@@ -57,7 +57,7 @@ func TestToPcapBPFInstruction(t *testing.T) {
 
 		for i, inst := range test.raw {
 			got := ToPcapBPFInstruction(inst)
-			if  !reflect.DeepEqual(test.pcap[i], got) {
+			if !reflect.DeepEqual(test.pcap[i], got) {
 				t.Errorf("ToPcapBPFInstruction failed, got: %#v, expected: %#v", got, test.pcap[i])
 			}
 		}
@@ -69,7 +69,7 @@ func TestToPcapBPFInstruction(t *testing.T) {
 
 		for i, inst := range test.pcap {
 			got := ToBpfRawInstruction(inst)
-			if  !reflect.DeepEqual(test.raw[i], got) {
+			if !reflect.DeepEqual(test.raw[i], got) {
 				t.Errorf("ToRawBPFInstruction failed, got: %#v, expected: %#v", got, test.raw[i])
 			}
 		}
@@ -81,11 +81,10 @@ func TestToPcapBPFInstruction(t *testing.T) {
 
 		for i, inst := range test.pcap {
 			got := ToBpfInstruction(inst)
-			if  !reflect.DeepEqual(test.bpf[i], got) {
+			if !reflect.DeepEqual(test.bpf[i], got) {
 				t.Errorf("ToBPFInstruction failed, got: %#v, expected: %#v", got, test.bpf[i])
 			}
 		}
-
 
 	}
 }

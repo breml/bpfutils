@@ -12,23 +12,23 @@ import (
 
 func TestChainTypeString(t *testing.T) {
 	cases := []struct {
-		input ChainType
+		input  ChainType
 		output string
 	}{
 		{
-			input: 0,
+			input:  0,
 			output: "undefined",
 		},
 		{
-			input: 1,
+			input:  1,
 			output: "and",
 		},
 		{
-			input: 2,
+			input:  2,
 			output: "or",
 		},
 		{
-			input: 3,
+			input:  3,
 			output: "undefined",
 		},
 	}

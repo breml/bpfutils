@@ -49,7 +49,7 @@ func (c ChainType) String() string {
 //   if a packet would be returned after the first block (register a > 0)
 // * OR-case: only evaluate second block,
 //   if the packet would not be returned after the first block (register a == 0)
-func ChainFilter(a, b []bpf.Instruction, ct ChainType) ([]bpf.Instruction) {
+func ChainFilter(a, b []bpf.Instruction, ct ChainType) []bpf.Instruction {
 	bpfChained := make([]bpf.Instruction, 0, len(a)+len(b)+10)
 	offset := len(a)
 
